@@ -274,7 +274,7 @@ class ObjectPipe(Generic[_T]):
 
 
 class Message:
-    type = None        # type: str
+    msg_type = None    # type: str
     pkt = None         # type: Packet
     result = None      # type: str
     state = None       # type: Message
