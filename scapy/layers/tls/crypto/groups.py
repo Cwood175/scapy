@@ -14,15 +14,19 @@ We also provide TLS identifiers for these DH groups and also the ECDH groups.
 """
 
 
+import warnings
+
 from scapy.config import conf
 from scapy.compat import bytes_int, int_bytes
 from scapy.error import warning
 from scapy.utils import long_converter
 if conf.crypto_valid:
-    from cryptography.hazmat.backends import default_backend
-    from cryptography.hazmat.primitives.asymmetric import dh, ec
-    from cryptography.hazmat.primitives import serialization
-    from cryptography.hazmat.primitives.asymmetric.dh import DHParameterNumbers
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=DeprecationWarning, module="cryptography.hazmat.primitives.asymmetric.dh")
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives.asymmetric import dh, ec
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric.dh import DHParameterNumbers
 if conf.crypto_valid_advanced:
     from cryptography.hazmat.primitives.asymmetric import x25519
     from cryptography.hazmat.primitives.asymmetric import x448

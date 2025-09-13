@@ -63,7 +63,6 @@ class CARP(Packet):
         return h.digest()
 
 
-warning("CARP overwrites VRRP !")
 # This cancel the bindings done in vrrp.py
 split_layers(IP, VRRP, proto=IPPROTO_VRRP)
 split_layers(IP, VRRPv3, proto=IPPROTO_VRRP)
