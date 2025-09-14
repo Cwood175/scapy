@@ -133,14 +133,16 @@ if conf.crypto_valid:
     class Cipher_AES_256_CBC(Cipher_AES_128_CBC):
         key_len = 32
 
-    class Cipher_CAMELLIA_128_CBC(_BlockCipher):
-        pc_cls = algorithms.Camellia
-        pc_cls_mode = modes.CBC
-        block_size = 16
-        key_len = 16
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", CryptographyDeprecationWarning)
+        class Cipher_CAMELLIA_128_CBC(_BlockCipher):
+            pc_cls = algorithms.Camellia
+            pc_cls_mode = modes.CBC
+            block_size = 16
+            key_len = 16
 
-    class Cipher_CAMELLIA_256_CBC(Cipher_CAMELLIA_128_CBC):
-        key_len = 32
+        class Cipher_CAMELLIA_256_CBC(Cipher_CAMELLIA_128_CBC):
+            key_len = 32
 
 
 # Mostly deprecated ciphers
@@ -148,22 +150,24 @@ if conf.crypto_valid:
 _sslv2_block_cipher_algs = {}
 
 if conf.crypto_valid:
-    class Cipher_DES_ECB(_BlockCipher):
-        pc_cls = decrepit_algorithms.TripleDES
-        pc_cls_mode = modes.ECB
-        block_size = 8
-        key_len = 8
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", CryptographyDeprecationWarning)
+        class Cipher_DES_ECB(_BlockCipher):
+            pc_cls = decrepit_algorithms.TripleDES
+            pc_cls_mode = modes.ECB
+            block_size = 8
+            key_len = 8
 
-    class Cipher_DES_CBC(_BlockCipher):
-        pc_cls = decrepit_algorithms.TripleDES
-        pc_cls_mode = modes.CBC
-        block_size = 8
-        key_len = 8
+        class Cipher_DES_CBC(_BlockCipher):
+            pc_cls = decrepit_algorithms.TripleDES
+            pc_cls_mode = modes.CBC
+            block_size = 8
+            key_len = 8
 
-    class Cipher_DES40_CBC(Cipher_DES_CBC):
-        """
-        This is an export cipher example. The key length has been weakened to 5
-        random bytes (i.e. 5 bytes will be extracted from the master_secret).
+        class Cipher_DES40_CBC(Cipher_DES_CBC):
+            """
+            This is an export cipher example. The key length has been weakened to 5
+            random bytes (i.e. 5 bytes will be extracted from the master_secret).
         Yet, we still need to know the original length which will actually be
         fed into the encryption algorithm. This is what expanded_key_len
         is for, and it gets used in PRF.postprocess_key_for_export().
