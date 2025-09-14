@@ -134,7 +134,10 @@ if conf.crypto_valid:
         key_len = 32
 
     class Cipher_CAMELLIA_128_CBC(_BlockCipher):
-        pc_cls = algorithms.Camellia
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", CryptographyDeprecationWarning)
+            pc_cls = algorithms.Camellia
         pc_cls_mode = modes.CBC
         block_size = 16
         key_len = 16

@@ -1510,7 +1510,9 @@ class WINNT_ACL(Packet):
             None,
             length_of="Aces",
             adjust=lambda _, x: x + 8,
-            fmt="<H",  # total size including header : AclRevision(1) + Sbz1(1) + AclSize(2) + AceCount(2) + Sbz2(2)
+            fmt="<H",
+            # total size including header : AclRevision(1) + Sbz1(1) + AclSize(2) +
+            # AceCount(2) + Sbz2(2)
         ),
         FieldLenField("AceCount", None, count_of="Aces", fmt="<H"),
         ShortField("Sbz2", 0),
@@ -1930,7 +1932,8 @@ class SMB2_Header(Packet):
                 aesgcm = AESGCM(SigningSessionKey)
                 nonce = struct.pack("<Q", self.MID) + struct.pack(
                     "<I",
-                    (0 if IsClient else 1) | (0x8000000 if self.Command == 9 else 0),
+                    (0 if IsClient else 1)
+                    | (0x8000000 if self.Command == 9 else 0),
                 )
                 sig = aesgcm.encrypt(nonce, b"", s)
             elif "CMAC" in SigningAlgorithmId:
@@ -3053,8 +3056,12 @@ class SMB2_Create_Context(_NTLMPayloadPacket):
                     b"DH2Q": SMB2_CREATE_DURABLE_HANDLE_REQUEST_V2,
                     b"DH2C": SMB2_CREATE_DURABLE_HANDLE_RECONNECT_V2,
                     # 3.1.1 only
-                    b"E\xbc\xa6j\xef\xa7\xf7J\x90\x08\xfaF.\x14Mt": SMB2_CREATE_APP_INSTANCE_ID,  # noqa: E501
-                    b"\xb9\x82\xd0\xb7;V\x07O\xa0{RJ\x81\x16\xa0\x10": SMB2_CREATE_APP_INSTANCE_VERSION,  # noqa: E501
+                    b"E\xbc\xa6j\xef\xa7\xf7J\x90\x08\xfaF.\x14Mt": (
+                        SMB2_CREATE_APP_INSTANCE_ID
+                    ),
+                    b"\xb9\x82\xd0\xb7;V\x07O\xa0{RJ\x81\x16\xa0\x10": (
+                        SMB2_CREATE_APP_INSTANCE_VERSION
+                    ),
                 }[self.Name]
                 if self.Name == b"RqLs" and self.DataLen > 32:
                     data_cls = SMB2_CREATE_REQUEST_LEASE_V2
@@ -3716,7 +3723,7 @@ class SOCKADDR_STORAGE(Packet):
         ShortField("Port", 0),
         # IPv4
         ConditionalField(
-            IPField("IPv4Adddress", None),
+            IPField("IPv4Address", None),
             lambda pkt: pkt.Family == 0x0002,
         ),
         ConditionalField(

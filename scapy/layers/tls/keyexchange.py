@@ -363,7 +363,9 @@ class ServerDHParams(_GenericTLSSessionInheritance):
         real_params = dh.DHParameterNumbers(p, g).parameters(default_backend())
 
         if not self.dh_Ys:
-            s.server_kx_privkey = real_params.generate_private_key()
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", CryptographyDeprecationWarning)
+                s.server_kx_privkey = real_params.generate_private_key()
             pubkey = s.server_kx_privkey.public_key()
             y = pubkey.public_numbers().y
             self.dh_Ys = pkcs_i2osp(y, pubkey.key_size // 8)
