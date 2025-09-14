@@ -451,29 +451,35 @@ def _tls_named_groups_import(group, pubbytes):
 
 
 def _tls_named_groups_pubbytes(privkey):
-    if isinstance(privkey, dh.DHPrivateKey):
-        # https://datatracker.ietf.org/doc/html/rfc8446#section-4.2.8.1
-        pubkey = privkey.public_key()
-        return int_bytes(pubkey.public_numbers().y, privkey.key_size // 8)
-    elif isinstance(privkey, (x25519.X25519PrivateKey,
-                              x448.X448PrivateKey)):
+    import warnings
+    from cryptography.utils import CryptographyDeprecationWarning
+    from cryptography.hazmat.primitives.asymmetric import ec as _ec
+    if isinstance(privkey, (x25519.X25519PrivateKey,
+                            x448.X448PrivateKey)):
         # https://datatracker.ietf.org/doc/html/rfc8446#section-4.2.8.2
         pubkey = privkey.public_key()
         return pubkey.public_bytes(
             serialization.Encoding.Raw,
             serialization.PublicFormat.Raw
         )
-    else:
-        pubkey = privkey.public_key()
-        try:
-            # cryptography >= 2.5
-            return pubkey.public_bytes(
-                serialization.Encoding.X962,
-                serialization.PublicFormat.UncompressedPoint
-            )
-        except TypeError:
-            # older versions
-            return pubkey.public_numbers().encode_point()
+    if not isinstance(privkey, _ec.EllipticCurvePrivateKey):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", CryptographyDeprecationWarning)
+            if isinstance(privkey, dh.DHPrivateKey):
+                # https://datatracker.ietf.org/doc/html/rfc8446#section-4.2.8.1
+                pubkey = privkey.public_key()
+                return int_bytes(pubkey.public_numbers().y,
+                                 privkey.key_size // 8)
+    pubkey = privkey.public_key()
+    try:
+        # cryptography >= 2.5
+        return pubkey.public_bytes(
+            serialization.Encoding.X962,
+            serialization.PublicFormat.UncompressedPoint
+        )
+    except TypeError:
+        # older versions
+        return pubkey.public_numbers().encode_point()
 
 
 def _tls_named_groups_generate(group):

@@ -342,6 +342,9 @@ class ServerDHParams(_GenericTLSSessionInheritance):
 
         Note that we do not expect default_params.g to be more than 0xff.
         """
+        import warnings
+        from cryptography.utils import CryptographyDeprecationWarning
+
         s = self.tls_session
 
         default_params = _ffdh_groups['modp2048'][0].parameter_numbers()
@@ -360,13 +363,17 @@ class ServerDHParams(_GenericTLSSessionInheritance):
 
         p = pkcs_os2ip(self.dh_p)
         g = pkcs_os2ip(self.dh_g)
-        real_params = dh.DHParameterNumbers(p, g).parameters(default_backend())
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", CryptographyDeprecationWarning)
+            real_params = dh.DHParameterNumbers(p, g).parameters(
+                default_backend()
+            )
 
-        if not self.dh_Ys:
-            s.server_kx_privkey = real_params.generate_private_key()
-            pubkey = s.server_kx_privkey.public_key()
-            y = pubkey.public_numbers().y
-            self.dh_Ys = pkcs_i2osp(y, pubkey.key_size // 8)
+            if not self.dh_Ys:
+                s.server_kx_privkey = real_params.generate_private_key()
+                pubkey = s.server_kx_privkey.public_key()
+                y = pubkey.public_numbers().y
+                self.dh_Ys = pkcs_i2osp(y, pubkey.key_size // 8)
         # else, we assume that the user wrote the server_kx_privkey by himself
         if self.dh_Yslen is None:
             self.dh_Yslen = len(self.dh_Ys)
@@ -379,19 +386,23 @@ class ServerDHParams(_GenericTLSSessionInheritance):
         """
         XXX Check that the pubkey received is in the group.
         """
+        import warnings
+        from cryptography.utils import CryptographyDeprecationWarning
+
         p = pkcs_os2ip(self.dh_p)
         g = pkcs_os2ip(self.dh_g)
-        pn = dh.DHParameterNumbers(p, g)
-
         y = pkcs_os2ip(self.dh_Ys)
-        public_numbers = dh.DHPublicNumbers(y, pn)
-
         s = self.tls_session
-        s.server_kx_pubkey = public_numbers.public_key(default_backend())
-        s.kx_group = "ffdhe%s" % (self.dh_plen * 8)
 
-        if not s.client_kx_ffdh_params:
-            s.client_kx_ffdh_params = pn.parameters(default_backend())
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", CryptographyDeprecationWarning)
+            pn = dh.DHParameterNumbers(p, g)
+            public_numbers = dh.DHPublicNumbers(y, pn)
+            s.server_kx_pubkey = public_numbers.public_key(default_backend())
+            s.kx_group = "ffdhe%s" % (self.dh_plen * 8)
+
+            if not s.client_kx_ffdh_params:
+                s.client_kx_ffdh_params = pn.parameters(default_backend())
 
     def post_dissection(self, r):
         try:
@@ -793,13 +804,25 @@ class ClientDiffieHellmanPublic(_GenericTLSSessionInheritance):
 
         # if there are kx params and keys, we assume the crypto library is ok
         if s.client_kx_ffdh_params:
+            import warnings
+            from cryptography.utils import CryptographyDeprecationWarning
             y = pkcs_os2ip(self.dh_Yc)
-            param_numbers = s.client_kx_ffdh_params.parameter_numbers()
-            public_numbers = dh.DHPublicNumbers(y, param_numbers)
-            s.client_kx_pubkey = public_numbers.public_key(default_backend())
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore",
+                                      CryptographyDeprecationWarning)
+                param_numbers = s.client_kx_ffdh_params.parameter_numbers()
+                public_numbers = dh.DHPublicNumbers(y, param_numbers)
+                s.client_kx_pubkey = public_numbers.public_key(
+                    default_backend()
+                )
 
         if s.server_kx_privkey and s.client_kx_pubkey:
-            ZZ = s.server_kx_privkey.exchange(s.client_kx_pubkey)
+            import warnings
+            from cryptography.utils import CryptographyDeprecationWarning
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore",
+                                      CryptographyDeprecationWarning)
+                ZZ = s.server_kx_privkey.exchange(s.client_kx_pubkey)
             s.pre_master_secret = ZZ.lstrip(b"\x00")
             if not s.extms:
                 s.compute_ms_and_derive_keys()

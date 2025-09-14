@@ -274,6 +274,7 @@ class ObjectPipe(Generic[_T]):
 
 
 class Message:
+    #: :meta private:
     type = None        # type: str
     pkt = None         # type: Packet
     result = None      # type: str
