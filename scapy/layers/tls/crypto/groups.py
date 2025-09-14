@@ -13,19 +13,18 @@ We also provide TLS identifiers for these DH groups and also the ECDH groups.
 (Note that the equivalent of _ffdh_groups for ECDH is ec._CURVE_TYPES.)
 """
 
-
-from scapy.config import conf
 from scapy.compat import bytes_int, int_bytes
+from scapy.config import conf
 from scapy.error import warning
 from scapy.utils import long_converter
+
 if conf.crypto_valid:
     from cryptography.hazmat.backends import default_backend
-    from cryptography.hazmat.primitives.asymmetric import dh, ec
     from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import dh, ec
     from cryptography.hazmat.primitives.asymmetric.dh import DHParameterNumbers
 if conf.crypto_valid_advanced:
-    from cryptography.hazmat.primitives.asymmetric import x25519
-    from cryptography.hazmat.primitives.asymmetric import x448
+    from cryptography.hazmat.primitives.asymmetric import x448, x25519
 
 
 _ffdh_groups = {}
@@ -33,8 +32,7 @@ _ffdh_groups = {}
 
 class _FFDHParamsMetaclass(type):
     def __new__(cls, ffdh_name, bases, dct):
-        the_class = super(_FFDHParamsMetaclass, cls).__new__(cls, ffdh_name,
-                                                             bases, dct)
+        the_class = super().__new__(cls, ffdh_name, bases, dct)
         if conf.crypto_valid and ffdh_name != "_FFDHParams":
             pn = DHParameterNumbers(the_class.m, the_class.g)
             params = pn.parameters(default_backend())
@@ -390,23 +388,48 @@ class ffdhe8192(_FFDHParams):  # From RFC 7919
     mLen = 8192
 
 
-_tls_named_ffdh_groups = {256: "ffdhe2048", 257: "ffdhe3072",
-                          258: "ffdhe4096", 259: "ffdhe6144",
-                          260: "ffdhe8192"}
+_tls_named_ffdh_groups = {
+    256: "ffdhe2048",
+    257: "ffdhe3072",
+    258: "ffdhe4096",
+    259: "ffdhe6144",
+    260: "ffdhe8192",
+}
 
-_tls_named_curves = {1: "sect163k1", 2: "sect163r1", 3: "sect163r2",
-                     4: "sect193r1", 5: "sect193r2", 6: "sect233k1",
-                     7: "sect233r1", 8: "sect239k1", 9: "sect283k1",
-                     10: "sect283r1", 11: "sect409k1", 12: "sect409r1",
-                     13: "sect571k1", 14: "sect571r1", 15: "secp160k1",
-                     16: "secp160r1", 17: "secp160r2", 18: "secp192k1",
-                     19: "secp192r1", 20: "secp224k1", 21: "secp224r1",
-                     22: "secp256k1", 23: "secp256r1", 24: "secp384r1",
-                     25: "secp521r1", 26: "brainpoolP256r1",
-                     27: "brainpoolP384r1", 28: "brainpoolP512r1",
-                     29: "x25519", 30: "x448",
-                     0xff01: "arbitrary_explicit_prime_curves",
-                     0xff02: "arbitrary_explicit_char2_curves"}
+_tls_named_curves = {
+    1: "sect163k1",
+    2: "sect163r1",
+    3: "sect163r2",
+    4: "sect193r1",
+    5: "sect193r2",
+    6: "sect233k1",
+    7: "sect233r1",
+    8: "sect239k1",
+    9: "sect283k1",
+    10: "sect283r1",
+    11: "sect409k1",
+    12: "sect409r1",
+    13: "sect571k1",
+    14: "sect571r1",
+    15: "secp160k1",
+    16: "secp160r1",
+    17: "secp160r2",
+    18: "secp192k1",
+    19: "secp192r1",
+    20: "secp224k1",
+    21: "secp224r1",
+    22: "secp256k1",
+    23: "secp256r1",
+    24: "secp384r1",
+    25: "secp521r1",
+    26: "brainpoolP256r1",
+    27: "brainpoolP384r1",
+    28: "brainpoolP512r1",
+    29: "x25519",
+    30: "x448",
+    0xFF01: "arbitrary_explicit_prime_curves",
+    0xFF02: "arbitrary_explicit_char2_curves",
+}
 
 _tls_named_groups = {}
 _tls_named_groups.update(_tls_named_ffdh_groups)
@@ -438,30 +461,24 @@ def _tls_named_groups_import(group, pubbytes):
             except TypeError:
                 pass
             try:  # cryptography >= 2.5
-                return ec.EllipticCurvePublicKey.from_encoded_point(
-                    curve,
-                    pubbytes
-                )
+                return ec.EllipticCurvePublicKey.from_encoded_point(curve, pubbytes)
             except AttributeError:
                 pub_num = ec.EllipticCurvePublicNumbers.from_encoded_point(
-                    curve,
-                    pubbytes
+                    curve, pubbytes
                 ).public_numbers()
                 return pub_num.public_key(default_backend())
 
 
 def _tls_named_groups_pubbytes(privkey):
-    if isinstance(privkey, dh.DHPrivateKey):
+    if isinstance(privkey, dh.DHPrivateKeyWithSerialization):
         # https://datatracker.ietf.org/doc/html/rfc8446#section-4.2.8.1
         pubkey = privkey.public_key()
         return int_bytes(pubkey.public_numbers().y, privkey.key_size // 8)
-    elif isinstance(privkey, (x25519.X25519PrivateKey,
-                              x448.X448PrivateKey)):
+    elif isinstance(privkey, (x25519.X25519PrivateKey, x448.X448PrivateKey)):
         # https://datatracker.ietf.org/doc/html/rfc8446#section-4.2.8.2
         pubkey = privkey.public_key()
         return pubkey.public_bytes(
-            serialization.Encoding.Raw,
-            serialization.PublicFormat.Raw
+            serialization.Encoding.Raw, serialization.PublicFormat.Raw
         )
     else:
         pubkey = privkey.public_key()
@@ -469,7 +486,7 @@ def _tls_named_groups_pubbytes(privkey):
             # cryptography >= 2.5
             return pubkey.public_bytes(
                 serialization.Encoding.X962,
-                serialization.PublicFormat.UncompressedPoint
+                serialization.PublicFormat.UncompressedPoint,
             )
         except TypeError:
             # older versions
@@ -489,9 +506,7 @@ def _tls_named_groups_generate(group):
                 else:
                     return x448.X448PrivateKey.generate()
             else:
-                warning(
-                    "Your cryptography version doesn't support " + group_name
-                )
+                warning("Your cryptography version doesn't support " + group_name)
         else:
             curve = ec._CURVE_TYPES[_tls_named_curves[group]]
             try:
@@ -500,6 +515,7 @@ def _tls_named_groups_generate(group):
             except TypeError:
                 pass
             return ec.generate_private_key(curve, default_backend())
+
 
 # Below lies ghost code since the shift from 'ecdsa' to 'cryptography' lib.
 # Part of the code has been kept, but commented out, in case anyone would like
@@ -572,17 +588,17 @@ def _tls_named_groups_generate(group):
 #            # perform the y coordinate computation with self.tls_ec
 #            y_square = (x*x*x + curve.a()*x + curve.b()) % p
 #            y = square_root_mod_prime(y_square, p)
-#            y_parity = ord(point_format) % 2    # \x02 means even, \x03 means odd  # noqa: E501
+#            y_parity = ord(point_format) % 2    # \x02 means even, \x03 means odd
 #            if y % 2 != y_parity:
 #                y = -y % p
 #        else:
 #            raise Exception("Point starts with %s. This encoding "
 #                            "is not recognized." % repr(point_format))
 #        if not curve.contains_point(x, y):
-#            raise Exception("The point we extracted does not belong on the curve!")  # noqa: E501
+#            raise Exception("The point we extracted does not belong on the curve!")
 #        return x, y
 #
-#    def import_curve(p, a, b, g, r, name="dummyName", oid=(1, 3, 132, 0, 0xff)):  # noqa: E501
+#    def import_curve(p, a, b, g, r, name="dummyName", oid=(1, 3, 132, 0, 0xff)):
 #        """
 #        Create an ecdsa.curves.Curve from the usual parameters.
 #        Arguments may be either octet strings or integers,
